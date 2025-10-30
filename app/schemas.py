@@ -50,4 +50,11 @@ class LibroRead(SQLModel):
     anio_publicacion: int
     copias: int
 
+class AutorMini(SQLModel):
+    id: int
+    nombre: str
+    pais_origen: str
+
+class LibroWithAutores(LibroRead):
+    autores: List[AutorMini] = []
 
