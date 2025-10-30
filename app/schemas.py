@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlmodel import SQLModel, Field
 
-# -------- AUTOR --------
+
 class AutorCreate(SQLModel):
     nombre: str = Field(min_length=2, max_length=120)
     pais_origen: str = Field(min_length=2, max_length=80)
@@ -28,7 +28,7 @@ class LibroMini(SQLModel):
 class AutorWithLibros(AutorRead):
     libros: List[LibroMini] = []
 
-# -------- LIBRO --------
+
 class LibroCreate(SQLModel):
     titulo: str = Field(min_length=2, max_length=200)
     isbn: str = Field(min_length=10, max_length=20)

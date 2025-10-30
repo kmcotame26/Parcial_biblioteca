@@ -31,7 +31,3 @@ async def obtener_autor_con_libros(autor_id: int, session: AsyncSession = Depend
 async def actualizar_autor(autor_id: int, data: schemas.AutorUpdate, session: AsyncSession = Depends(get_session)):
     return await crud.actualizar_autor(session, autor_id, data)
 
-@router.delete("/{autor_id}", status_code=status.HTTP_200_OK)
-async def eliminar_autor(autor_id: int, session: AsyncSession = Depends(get_session)):
-    await crud.eliminar_autor(session, autor_id)
-    return {"mensaje": "Autor eliminado"}
