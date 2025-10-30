@@ -7,7 +7,7 @@ from sqlmodel import col
 from .models import Autor, Libro, AutorLibroLink
 from . import schemas
 
-# ----------------- AUTOR -----------------
+
 async def crear_autor(db: AsyncSession, data: schemas.AutorCreate) -> Autor:
     autor = Autor(**data.model_dump())
     db.add(autor)
@@ -42,11 +42,9 @@ async def actualizar_autor(db: AsyncSession, autor_id: int, data: schemas.AutorU
 
 async def eliminar_autor(db: AsyncSession, autor_id: int) -> None:
     autor = await obtener_autor(db, autor_id)
-    # Al eliminar autor, se eliminan solo sus vínculos con libros; los libros permanecen.
     await db.delete(autor)
     await db.commit()
 
-# ----------------- LIBRO -----------------
 async def _validar_isbn_unico(db: AsyncSession, isbn: str, ignore_id: Optional[int] = None) -> None:
     q = select(Libro).where(col(Libro.isbn) == isbn)
     existente = (await db.execute(q)).scalar_one_or_none()
@@ -97,20 +95,19 @@ async def actualizar_libro(db: AsyncSession, libro_id: int, data: schemas.LibroU
     libro = await obtener_libro(db, libro_id)
     payload = data.model_dump(exclude_unset=True)
 
-    # ISBN único si cambia
+
     if "isbn" in payload and payload["isbn"]:
         await _validar_isbn_unico(db, payload["isbn"], ignore_id=libro.id)
 
-    # Copias >= 0 reforzado (ya validado en schema)
+
     if "copias" in payload and payload["copias"] is not None and payload["copias"] < 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Las copias no pueden ser negativas")
 
-    # Actualizar campos simples
     for k, v in payload.items():
         if k != "autores_ids":
             setattr(libro, k, v)
 
-    # Si envían autores_ids, reemplazar coautores
+
     if "autores_ids" in payload and payload["autores_ids"] is not None:
         autores = await _autores_por_ids(db, payload["autores_ids"])
         libro.autores = autores
@@ -121,6 +118,5 @@ async def actualizar_libro(db: AsyncSession, libro_id: int, data: schemas.LibroU
 
 async def eliminar_libro(db: AsyncSession, libro_id: int) -> None:
     libro = await obtener_libro(db, libro_id)
-    # Validación de copias: mantener regla (>=0). Si piden borrar, permitimos eliminar registro.
     await db.delete(libro)
     await db.commit()
