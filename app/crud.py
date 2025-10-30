@@ -83,3 +83,44 @@ async def listar_libros(db: AsyncSession, anio: Optional[int] = None) -> List[Li
         q = q.where(col(Libro.anio_publicacion) == anio)
     q = q.order_by(Libro.id)
     return list((await db.execute(q)).scalars().all())
+
+async def obtener_libro(db: AsyncSession, libro_id: int) -> Libro:
+    libro = await db.get(Libro, libro_id)
+    if not libro:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Libro no encontrado")
+    return libro
+
+async def obtener_libro_con_autores(db: AsyncSession, libro_id: int) -> Libro:
+    return await obtener_libro(db, libro_id)
+
+async def actualizar_libro(db: AsyncSession, libro_id: int, data: schemas.LibroUpdate) -> Libro:
+    libro = await obtener_libro(db, libro_id)
+    payload = data.model_dump(exclude_unset=True)
+
+    # ISBN único si cambia
+    if "isbn" in payload and payload["isbn"]:
+        await _validar_isbn_unico(db, payload["isbn"], ignore_id=libro.id)
+
+    # Copias >= 0 reforzado (ya validado en schema)
+    if "copias" in payload and payload["copias"] is not None and payload["copias"] < 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Las copias no pueden ser negativas")
+
+    # Actualizar campos simples
+    for k, v in payload.items():
+        if k != "autores_ids":
+            setattr(libro, k, v)
+
+    # Si envían autores_ids, reemplazar coautores
+    if "autores_ids" in payload and payload["autores_ids"] is not None:
+        autores = await _autores_por_ids(db, payload["autores_ids"])
+        libro.autores = autores
+
+    await db.commit()
+    await db.refresh(libro)
+    return libro
+
+async def eliminar_libro(db: AsyncSession, libro_id: int) -> None:
+    libro = await obtener_libro(db, libro_id)
+    # Validación de copias: mantener regla (>=0). Si piden borrar, permitimos eliminar registro.
+    await db.delete(libro)
+    await db.commit()
