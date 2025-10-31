@@ -27,3 +27,7 @@ async def obtener_libro_con_autores(libro_id: int, session: AsyncSession = Depen
 async def actualizar_libro(libro_id: int, data: schemas.LibroUpdate, session: AsyncSession = Depends(get_session)):
     return await crud.actualizar_libro(session, libro_id, data)
 
+@router.delete("/{libro_id}", status_code=status.HTTP_200_OK)
+async def eliminar_libro(libro_id: int, session: AsyncSession = Depends(get_session)):
+    await crud.eliminar_libro(session, libro_id)
+    return {"mensaje": "Libro eliminado"}
