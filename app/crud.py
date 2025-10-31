@@ -8,12 +8,6 @@ from .models import Autor, Libro, AutorLibroLink
 from . import schemas
 
 
-async def crear_autor(db: AsyncSession, data: schemas.AutorCreate) -> Autor:
-    autor = Autor(**data.model_dump())
-    db.add(autor)
-    await db.commit()
-    await db.refresh(autor)
-    return autor
 
 async def listar_autores(db: AsyncSession, pais: Optional[str] = None) -> List[Autor]:
     q = select(Autor)
